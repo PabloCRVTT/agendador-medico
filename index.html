@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiHora — Buscador médico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,500;0,700;1,300;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1A1F2E;
+    --ink2: #4A5568;
+    --ink3: #9AA5B4;
+    --cream: #F7F3EC;
+    --cream2: #EDE8DF;
+    --white: #FFFFFF;
+    --teal: #1B5C6B;
+    --teal-light: #E8F2F5;
+    --teal-mid: #2E7D8C;
+    --terra: #C96A3E;
+    --terra-light: #FBF0EB;
+    --green: #2E7D5E;
+    --green-light: #E8F5EF;
+    --amber: #B8860B;
+    --amber-light: #FEF9E7;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 4px 24px rgba(26,31,46,0.08);
+    --shadow-sm: 0 2px 8px rgba(26,31,46,0.06);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: #E8E3DA;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  /* PHONE FRAME */
+  .phone {
+    width: 390px;
+    min-height: 720px;
+    background: var(--cream);
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.4);
+    position: relative;
+  }
+
+  /* SCREEN */
+  .screen {
+    display: none;
+    flex-direction: column;
+    min-height: 720px;
+    position: relative;
+  }
+  .screen.active { display: flex; }
+
+  /* ANIMATIONS */
+  .screen.entering {
+    animation: slideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  .screen.exiting {
+    animation: slideOut 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(30px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-20px); opacity: 0; }
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink2);
+  }
+  .status-bar .time { font-weight: 600; }
+  .status-icons { display: flex; gap: 6px; align-items: center; }
+
+  /* NAV */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 20px 12px;
+    gap: 12px;
+  }
+  .back-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--white);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.15s;
+  }
+  .back-btn:active { transform: scale(0.92); }
+  .nav-title { font-size: 15px; font-weight: 500; color: var(--ink); }
+
+  /* STEP INDICATOR */
+  .step-row {
+    display: flex;
+    gap: 6px;
+    padding: 0 24px 16px;
+    align-items: center;
+  }
+  .step-dot {
+    height: 4px; flex: 1;
+    background: var(--cream2);
+    border-radius: 2px;
+    transition: background 0.3s;
+  }
+  .step-dot.done { background: var(--teal); }
+  .step-dot.active { background: var(--terra); }
+
+  /* TYPOGRAPHY */
+  .display { font-family: 'Fraunces', serif; font-weight: 500; }
+  h1.display { font-size: 28px; line-height: 1.2; color: var(--ink); }
+  h2.display { font-size: 22px; line-height: 1.25; color: var(--ink); }
+
+  /* HERO SECTION (pantalla 1) */
+  .hero-section {
+    background: var(--teal);
+    padding: 40px 24px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    right: -50px; top: -50px;
+  }
+  .hero-section::after {
+    content: '';
+    position: absolute;
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+    right: 40px; bottom: 10px;
+  }
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 5px 12px;
+    margin-bottom: 20px;
+  }
+  .logo-badge span { font-size: 13px; font-weight: 600; color: white; letter-spacing: -0.2px; }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #6EDBB0; }
+  .hero-section h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    font-weight: 500;
+    color: white;
+    line-height: 1.3;
+    margin-bottom: 8px;
+  }
+  .hero-section p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.5;
+  }
+
+  /* FORM AREA */
+  .form-area {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  /* FIELD */
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink2);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--white);
+    border: 1.5px solid transparent;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+    box-shadow: var(--shadow-sm);
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(27,92,107,0.1);
+  }
+  .field input::placeholder { color: var(--ink3); }
+
+  /* SELECT WRAPPER */
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '↓';
+    position: absolute;
+    right: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink3);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  /* GPS ROW */
+  .gps-field {
+    display: flex;
+    gap: 10px;
+  }
+  .gps-field input { flex: 1; }
+  .gps-btn {
+    width: 48px; height: 48px;
+    border-radius: var(--radius-sm);
+    background: var(--teal-light);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    transition: background 0.2s, transform 0.15s;
+    flex-shrink: 0;
+  }
+  .gps-btn:active { transform: scale(0.92); }
+  .gps-btn.active { background: var(--teal); }
+
+  /* PRIVACY NOTE */
+  .privacy-note {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    background: var(--cream2);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-top: 4px;
+  }
+  .privacy-note span { font-size: 11px; color: var(--ink2); line-height: 1.5; }
+  .privacy-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  /* PRIMARY BUTTON */
+  .btn-primary {
+    width: 100%;
+    padding: 16px;
+    background: var(--terra);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: -0.2px;
+  }
+  .btn-primary:active { transform: scale(0.98); background: #B05C32; }
+  .btn-primary:hover { background: #D4703E; }
+  .btn-row { padding: 0 24px 28px; }
+
+  /* ================== PANTALLA 2: ESPECIALIDAD ================== */
+  .search-section {
+    padding: 24px 24px 12px;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--white);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    box-shadow: var(--shadow-sm);
+    border: 1.5px solid transparent;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus-within { border-color: var(--teal); }
+  .search-box input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .search-box input:focus { outline: none; }
+  .search-icon { font-size: 16px; color: var(--ink3); }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 16px 24px 10px;
+  }
+
+  /* SPECIALTY CHIPS */
+  .chips-scroll {
+    display: flex;
+    gap: 8px;
+    padding: 0 24px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .chips-scroll::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    border-radius: 20px;
+    background: var(--white);
+    border: 1.5px solid var(--cream2);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink2);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .chip.active {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: white;
+  }
+  .chip:hover:not(.active) { border-color: var(--teal); color: var(--teal); }
+
+  /* SPECIALTIES LIST */
+  .spec-list {
+    flex: 1;
+    padding: 4px 24px;
+    overflow-y: auto;
+  }
+  .spec-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--cream2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .spec-item:active { opacity: 0.7; }
+  .spec-item:last-child { border-bottom: none; }
+  .spec-icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .spec-info { flex: 1; }
+  .spec-name { font-size: 15px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .spec-sub { font-size: 12px; color: var(--ink3); }
+  .spec-arrow { color: var(--ink3); font-size: 14px; }
+
+  /* ================== PANTALLA 3: LOADING ================== */
+  .loading-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+    gap: 0;
+  }
+  .radar-wrap {
+    position: relative;
+    width: 180px; height: 180px;
+    margin-bottom: 32px;
+  }
+  .radar-circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 1.5px solid var(--teal);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    animation: radarPulse 2.4s ease-out infinite;
+  }
+  .radar-circle:nth-child(1) { width: 40px; height: 40px; animation-delay: 0s; }
+  .radar-circle:nth-child(2) { width: 80px; height: 80px; animation-delay: 0.4s; }
+  .radar-circle:nth-child(3) { width: 120px; height: 120px; animation-delay: 0.8s; }
+  .radar-circle:nth-child(4) { width: 160px; height: 160px; animation-delay: 1.2s; }
+  .radar-center {
+    position: absolute;
+    width: 48px; height: 48px;
+    background: var(--teal);
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 4px 20px rgba(27,92,107,0.3);
+  }
+  @keyframes radarPulse {
+    0% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.3); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+  }
+  .loading-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .loading-sub {
+    font-size: 14px;
+    color: var(--ink3);
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .loading-steps {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .loading-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--white);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    box-shadow: var(--shadow-sm);
+    opacity: 0.4;
+    transition: opacity 0.5s;
+  }
+  .loading-step.done { opacity: 1; }
+  .step-check {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--green-light);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .step-check.pending {
+    background: var(--cream2);
+    animation: stepPulse 1s ease-in-out infinite;
+  }
+  @keyframes stepPulse {
+    0%,100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  .step-text { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .step-detail { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+
+  /* ================== PANTALLA 4: RESULTADOS ================== */
+  .results-header {
+    padding: 16px 24px 8px;
+  }
+  .results-count {
+    font-size: 13px;
+    color: var(--ink3);
+    margin-bottom: 4px;
+  }
+  .results-title {
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  /* SORT ROW */
+  .sort-row {
+    display: flex;
+    gap: 8px;
+    padding: 8px 24px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sort-row::-webkit-scrollbar { display: none; }
+  .sort-pill {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    border-radius: 16px;
+    background: var(--white);
+    border: 1px solid var(--cream2);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink2);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sort-pill.active { background: var(--teal); border-color: var(--teal); color: white; }
+
+  /* CLINICA CARDS */
+  .cards-scroll {
+    flex: 1;
+    padding: 0 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 24px;
+  }
+  .clinica-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1.5px solid transparent;
+  }
+  .clinica-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+  .clinica-card:active { transform: scale(0.98); }
+  .clinica-card.best { border-color: var(--terra); }
+
+  .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .card-rank {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .rank-1 { background: var(--terra); color: white; }
+  .rank-2 { background: var(--teal-light); color: var(--teal); }
+  .rank-3 { background: var(--cream2); color: var(--ink2); }
+  .rank-4 { background: var(--cream2); color: var(--ink2); }
+
+  .best-badge {
+    font-size: 10px;
+    font-weight: 600;
+    background: var(--terra-light);
+    color: var(--terra);
+    padding: 3px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.03em;
+  }
+
+  .clinica-name { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+  .clinica-address { font-size: 12px; color: var(--ink3); margin-bottom: 10px; }
+
+  .card-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .pill-tag {
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  .pill-isapre { background: var(--green-light); color: var(--green); }
+  .pill-distancia { background: var(--teal-light); color: var(--teal); }
+  .pill-disponible { background: var(--amber-light); color: var(--amber); }
+
+  .card-footer { display: flex; justify-content: space-between; align-items: center; }
+  .next-hour {
+    font-size: 12px;
+    color: var(--ink2);
+  }
+  .next-hour strong { color: var(--teal); font-weight: 600; }
+  .ver-horas-btn {
+    padding: 8px 16px;
+    background: var(--teal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .ver-horas-btn:active { transform: scale(0.94); }
+
+  /* ================== PANTALLA 5: HORAS ================== */
+  .clinica-hero {
+    background: var(--teal);
+    padding: 20px 24px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .clinica-hero::before {
+    content: '';
+    position: absolute;
+    width: 160px; height: 160px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    right: -40px; top: -40px;
+  }
+  .ch-label { font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+  .ch-name { font-family: 'Fraunces', serif; font-size: 20px; color: white; font-weight: 500; margin-bottom: 4px; }
+  .ch-address { font-size: 12px; color: rgba(255,255,255,0.65); margin-bottom: 14px; }
+  .ch-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ch-tag {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.15);
+    color: white;
+    font-weight: 500;
+  }
+  .ch-tag.green { background: rgba(110,219,176,0.25); color: #6EDBB0; }
+
+  .doctor-selector {
+    padding: 16px 24px 8px;
+  }
+  .doctor-selector label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .select-wrap select {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--white);
+    border: 1.5px solid var(--cream2);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    appearance: none;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* CALENDAR */
+  .cal-section { padding: 12px 24px 8px; }
+  .cal-section label {
+    font-size: 11px; font-weight: 600; color: var(--ink3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 10px; display: block;
+  }
+  .cal-row {
+    display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+    padding-bottom: 4px;
+  }
+  .cal-row::-webkit-scrollbar { display: none; }
+  .cal-day {
+    flex-shrink: 0;
+    width: 48px;
+    padding: 8px 0;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    background: var(--white);
+    border: 1.5px solid var(--cream2);
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+  }
+  .cal-day.active { background: var(--teal); border-color: var(--teal); }
+  .cal-day.has-avail { border-color: var(--terra); }
+  .cal-day-label { font-size: 10px; color: var(--ink3); font-weight: 500; text-transform: uppercase; }
+  .cal-day-num { font-size: 18px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+  .cal-day.active .cal-day-label,
+  .cal-day.active .cal-day-num { color: white; }
+  .cal-day-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--terra); margin: 3px auto 0; }
+  .cal-day.active .cal-day-dot { background: rgba(255,255,255,0.6); }
+
+  /* HOURS GRID */
+  .hours-section { padding: 12px 24px 0; flex: 1; }
+  .hours-section label {
+    font-size: 11px; font-weight: 600; color: var(--ink3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 10px; display: block;
+  }
+  .hours-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .hour-slot {
+    padding: 10px 6px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--teal);
+    background: var(--teal-light);
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.2s;
+  }
+  .hour-slot:hover { border-color: var(--teal); }
+  .hour-slot.selected { background: var(--teal); color: white; }
+  .hour-slot.occupied { background: var(--cream2); color: var(--ink3); cursor: not-allowed; text-decoration: line-through; }
+
+  /* EMAIL SECTION */
+  .email-section {
+    padding: 16px 24px 0;
+  }
+  .email-section label {
+    font-size: 11px; font-weight: 600; color: var(--ink3);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 6px; display: block;
+  }
+  .email-input-wrap { position: relative; }
+  .email-input-wrap input {
+    width: 100%;
+    padding: 13px 16px;
+    background: var(--white);
+    border: 1.5px solid var(--cream2);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    box-shadow: var(--shadow-sm);
+  }
+  .email-input-wrap input:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(27,92,107,0.1);
+  }
+
+  /* CONFIRM SECTION */
+  .confirm-section { padding: 14px 24px 24px; }
+  .confirm-note {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    background: var(--terra-light);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .confirm-note span { font-size: 11px; color: #7A3D20; line-height: 1.5; }
+  .btn-confirm {
+    width: 100%;
+    padding: 16px;
+    background: var(--terra);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .btn-confirm:active { transform: scale(0.98); background: #B05C32; }
+
+  /* DESKTOP NAV */
+  .desktop-nav {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    background: rgba(26,31,46,0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 8px 12px;
+    z-index: 100;
+  }
+  .nav-pill {
+    padding: 7px 16px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .nav-pill.current { background: var(--terra); color: white; }
+  .nav-pill:hover:not(.current) { color: white; }
+
+  /* SCROLL FIX */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- ==================== PANTALLA 1: DATOS ==================== -->
+  <div class="screen active" id="s1">
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="status-icons">
+        <span>●●●</span><span>WiFi</span><span>🔋</span>
+      </div>
+    </div>
+
+    <div class="hero-section">
+      <div class="logo-badge">
+        <div class="logo-dot"></div>
+        <span>MiHora</span>
+      </div>
+      <h1>Encuentra al médico<br><em>más conveniente</em><br>para ti</h1>
+      <p>Búsqueda en clínicas cercanas<br>con cobertura de tu Isapre</p>
+    </div>
+
+    <div class="form-area">
+      <div class="field">
+        <label>RUT</label>
+        <input type="text" placeholder="12.345.678-9" id="rut-input" value="12.345.678-9">
+      </div>
+
+      <div class="field">
+        <label>Isapre</label>
+        <div class="select-wrap">
+          <select id="isapre-select">
+            <option value="">Selecciona tu Isapre</option>
+            <option selected>Banmédica</option>
+            <option>Colmena</option>
+            <option>Cruz Blanca</option>
+            <option>Nueva Masvida</option>
+            <option>Vida Tres</option>
+            <option>Consalud</option>
+            <option>Fonasa</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Ubicación</label>
+        <div class="gps-field">
+          <input type="text" placeholder="Detectando tu ubicación…" id="loc-input" value="Providencia, Santiago">
+          <button class="gps-btn active" onclick="pulseGPS(this)" title="Usar GPS">📍</button>
+        </div>
+      </div>
+
+      <div class="privacy-note">
+        <span class="privacy-icon">🔒</span>
+        <span>Tus datos son privados y nunca serán compartidos con terceros. Tu RUT se almacena de forma encriptada.</span>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" onclick="goTo(2)">Buscar médico →</button>
+    </div>
+  </div>
+
+  <!-- ==================== PANTALLA 2: ESPECIALIDAD ==================== -->
+  <div class="screen" id="s2">
+    <div class="status-bar">
+      <span class="time">9:42</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+    </div>
+    <div class="nav-bar">
+      <button class="back-btn" onclick="goTo(1)">←</button>
+      <span class="nav-title">¿Qué especialista necesitas?</span>
+    </div>
+    <div class="step-row">
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="search-section">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Ej: traumatólogo, cardiólogo…" id="spec-search">
+      </div>
+    </div>
+
+    <div class="chips-scroll">
+      <div class="chip active">Todos</div>
+      <div class="chip">Urgentes</div>
+      <div class="chip">Niños</div>
+      <div class="chip">Crónicas</div>
+      <div class="chip">Salud mental</div>
+    </div>
+
+    <div class="section-label">Especialidades frecuentes</div>
+
+    <div class="spec-list">
+      <div class="spec-item" onclick="goTo(3)">
+        <div class="spec-icon" style="background:#EBF3FF;">🦴</div>
+        <div class="spec-info">
+          <div class="spec-name">Traumatología</div>
+          <div class="spec-sub">Huesos, articulaciones, columna</div>
+        </div>
+        <span class="spec-arrow">→</span>
+      </div>
+      <div class="spec-item" onclick="goTo(3)">
+        <div class="spec-icon" style="background:#FFF0F0;">❤️</div>
+        <div class="spec-info">
+          <div class="spec-name">Cardiología</div>
+          <div class="spec-sub">Corazón y sistema vascular</div>
+        </div>
+        <span class="spec-arrow">→</span>
+      </div>
+      <div class="spec-item" onclick="goTo(3)">
+        <div class="spec-icon" style="background:#F0FFF4;">🧠</div>
+        <div class="spec-info">
+          <div class="spec-name">Neurología</div>
+          <div class="spec-sub">Sistema nervioso, cefaleas</div>
+        </div>
+        <span class="spec-arrow">→</span>
+      </div>
+      <div class="spec-item" onclick="goTo(3)">
+        <div class="spec-icon" style="background:#FFFBF0;">👁️</div>
+        <div class="spec-info">
+          <div class="spec-name">Oftalmología</div>
+          <div class="spec-sub">Visión, glaucoma, cataratas</div>
+        </div>
+        <span class="spec-arrow">→</span>
+      </div>
+      <div class="spec-item" onclick="goTo(3)">
+        <div class="spec-icon" style="background:#F5F0FF;">🩺</div>
+        <div class="spec-info">
+          <div class="spec-name">Medicina interna</div>
+          <div class="spec-sub">Diagnóstico general adultos</div>
+        </div>
+        <span class="spec-arrow">→</span>
+      </div>
+      <div class="spec-item" onclick="goTo(3)">
+        <div class="spec-icon" style="background:#F0F8FF;">🧬</div>
+        <div class="spec-info">
+          <div class="spec-name">Dermatología</div>
+          <div class="spec-sub">Piel, pelo, uñas</div>
+        </div>
+        <span class="spec-arrow">→</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PANTALLA 3: BUSCANDO ==================== -->
+  <div class="screen" id="s3">
+    <div class="status-bar">
+      <span class="time">9:42</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+    </div>
+    <div class="step-row" style="padding:16px 24px 0">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="loading-screen">
+      <div class="radar-wrap">
+        <div class="radar-circle"></div>
+        <div class="radar-circle"></div>
+        <div class="radar-circle"></div>
+        <div class="radar-circle"></div>
+        <div class="radar-center">📍</div>
+      </div>
+      <div class="loading-title">Buscando en tu zona</div>
+      <div class="loading-sub">Providencia y comunas colindantes</div>
+
+      <div class="loading-steps" id="loading-steps">
+        <div class="loading-step done" id="lstep1">
+          <div class="step-check">✓</div>
+          <div>
+            <div class="step-text">Comunas cercanas</div>
+            <div class="step-detail">Providencia · Ñuñoa · Santiago · Las Condes</div>
+          </div>
+        </div>
+        <div class="loading-step" id="lstep2">
+          <div class="step-check pending">⋯</div>
+          <div>
+            <div class="step-text">Clínicas con convenio Banmédica</div>
+            <div class="step-detail">Verificando cobertura de tu Isapre…</div>
+          </div>
+        </div>
+        <div class="loading-step" id="lstep3">
+          <div class="step-check pending">⋯</div>
+          <div>
+            <div class="step-text">Disponibilidad de horas</div>
+            <div class="step-detail">Revisando agendas próximos 7 días…</div>
+          </div>
+        </div>
+        <div class="loading-step" id="lstep4">
+          <div class="step-check pending">⋯</div>
+          <div>
+            <div class="step-text">Calculando el mejor match</div>
+            <div class="step-detail">Cobertura + distancia + disponibilidad</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PANTALLA 4: RESULTADOS ==================== -->
+  <div class="screen" id="s4">
+    <div class="status-bar">
+      <span class="time">9:43</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+    </div>
+    <div class="nav-bar">
+      <button class="back-btn" onclick="goTo(2)">←</button>
+      <span class="nav-title">Traumatología · Providencia</span>
+    </div>
+    <div class="step-row">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+      <div class="step-dot"></div>
+    </div>
+
+    <div class="results-header">
+      <div class="results-count">4 clínicas encontradas · Banmédica ✓</div>
+      <div class="results-title">Las más convenientes para ti</div>
+    </div>
+
+    <div class="sort-row">
+      <div class="sort-pill active">Mejor match</div>
+      <div class="sort-pill">Más cercana</div>
+      <div class="sort-pill">Antes disponible</div>
+      <div class="sort-pill">Menor copago</div>
+    </div>
+
+    <div class="cards-scroll">
+
+      <div class="clinica-card best" onclick="goTo(5)">
+        <div class="card-header">
+          <div class="card-rank rank-1">1</div>
+          <div class="best-badge">Mejor opción</div>
+        </div>
+        <div class="clinica-name">Red Dávila Ñuñoa</div>
+        <div class="clinica-address">📍 Av. Irarrázaval 1420 · 1.2 km</div>
+        <div class="card-pills">
+          <span class="pill-tag pill-isapre">Banmédica ✓</span>
+          <span class="pill-tag pill-distancia">1.2 km</span>
+          <span class="pill-tag pill-disponible">Hoy disponible</span>
+        </div>
+        <div class="card-footer">
+          <div class="next-hour">Próxima hora:<br><strong>Hoy 15:30</strong></div>
+          <button class="ver-horas-btn">Ver horas →</button>
+        </div>
+      </div>
+
+      <div class="clinica-card" onclick="goTo(5)">
+        <div class="card-header">
+          <div class="card-rank rank-2">2</div>
+        </div>
+        <div class="clinica-name">INDISA · Providencia</div>
+        <div class="clinica-address">📍 Av. Santa María 1810 · 0.8 km</div>
+        <div class="card-pills">
+          <span class="pill-tag pill-isapre">Banmédica ✓</span>
+          <span class="pill-tag pill-distancia">0.8 km</span>
+        </div>
+        <div class="card-footer">
+          <div class="next-hour">Próxima hora:<br><strong>Mañana 10:00</strong></div>
+          <button class="ver-horas-btn">Ver horas →</button>
+        </div>
+      </div>
+
+      <div class="clinica-card" onclick="goTo(5)">
+        <div class="card-header">
+          <div class="card-rank rank-3">3</div>
+        </div>
+        <div class="clinica-name">Red Dávila Vespucio</div>
+        <div class="clinica-address">📍 Av. Américo Vespucio 1200 · 4.1 km</div>
+        <div class="card-pills">
+          <span class="pill-tag pill-isapre">Banmédica ✓</span>
+          <span class="pill-tag pill-distancia">4.1 km</span>
+        </div>
+        <div class="card-footer">
+          <div class="next-hour">Próxima hora:<br><strong>Mañana 14:30</strong></div>
+          <button class="ver-horas-btn">Ver horas →</button>
+        </div>
+      </div>
+
+      <div class="clinica-card" onclick="goTo(5)">
+        <div class="card-header">
+          <div class="card-rank rank-4">4</div>
+        </div>
+        <div class="clinica-name">Clínica Santa María</div>
+        <div class="clinica-address">📍 Av. Santa María 0500 · 1.5 km</div>
+        <div class="card-pills">
+          <span class="pill-tag pill-isapre">Banmédica ✓</span>
+          <span class="pill-tag pill-distancia">1.5 km</span>
+        </div>
+        <div class="card-footer">
+          <div class="next-hour">Próxima hora:<br><strong>Jue 09:00</strong></div>
+          <button class="ver-horas-btn">Ver horas →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== PANTALLA 5: HORAS + EMAIL ==================== -->
+  <div class="screen" id="s5">
+    <div class="status-bar">
+      <span class="time">9:44</span>
+      <div class="status-icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div>
+    </div>
+    <div class="nav-bar">
+      <button class="back-btn" onclick="goTo(4)">←</button>
+    </div>
+    <div class="step-row">
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot done"></div>
+      <div class="step-dot active"></div>
+    </div>
+
+    <div class="scroll-area">
+      <div class="clinica-hero">
+        <div class="ch-label">Clínica seleccionada</div>
+        <div class="ch-name">Red Dávila Ñuñoa</div>
+        <div class="ch-address">Av. Irarrázaval 1420, Ñuñoa · 1.2 km</div>
+        <div class="ch-tags">
+          <span class="ch-tag green">Banmédica ✓</span>
+          <span class="ch-tag">Traumatología</span>
+          <span class="ch-tag">Lun–Sáb</span>
+        </div>
+      </div>
+
+      <div class="doctor-selector">
+        <label>Médico</label>
+        <div class="select-wrap">
+          <select>
+            <option>Dr. Rodrigo Mena · Traumatólogo</option>
+            <option>Dra. Camila Torres · Traumatóloga</option>
+            <option>Dr. Felipe Araya · Traumatólogo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cal-section">
+        <label>Elige un día</label>
+        <div class="cal-row">
+          <div class="cal-day active">
+            <div class="cal-day-label">Hoy</div>
+            <div class="cal-day-num">16</div>
+            <div class="cal-day-dot"></div>
+          </div>
+          <div class="cal-day has-avail">
+            <div class="cal-day-label">Mar</div>
+            <div class="cal-day-num">17</div>
+            <div class="cal-day-dot"></div>
+          </div>
+          <div class="cal-day">
+            <div class="cal-day-label">Mié</div>
+            <div class="cal-day-num">18</div>
+          </div>
+          <div class="cal-day has-avail">
+            <div class="cal-day-label">Jue</div>
+            <div class="cal-day-num">19</div>
+            <div class="cal-day-dot"></div>
+          </div>
+          <div class="cal-day">
+            <div class="cal-day-label">Vie</div>
+            <div class="cal-day-num">20</div>
+          </div>
+          <div class="cal-day has-avail">
+            <div class="cal-day-label">Sáb</div>
+            <div class="cal-day-num">21</div>
+            <div class="cal-day-dot"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hours-section">
+        <label>Horas disponibles · Hoy 16 Mar</label>
+        <div class="hours-grid">
+          <div class="hour-slot occupied">09:00</div>
+          <div class="hour-slot occupied">10:00</div>
+          <div class="hour-slot occupied">11:00</div>
+          <div class="hour-slot occupied">12:00</div>
+          <div class="hour-slot occupied">13:00</div>
+          <div class="hour-slot occupied">14:00</div>
+          <div class="hour-slot">15:00</div>
+          <div class="hour-slot selected" id="selected-hour">15:30</div>
+          <div class="hour-slot">16:00</div>
+          <div class="hour-slot">16:30</div>
+          <div class="hour-slot">17:00</div>
+          <div class="hour-slot occupied">17:30</div>
+        </div>
+      </div>
+
+      <div class="email-section" style="margin-top:16px">
+        <label>Tu email para confirmar</label>
+        <div class="email-input-wrap">
+          <input type="email" placeholder="tu@email.com">
+        </div>
+      </div>
+
+      <div class="confirm-section">
+        <div class="confirm-note">
+          <span>⚡</span>
+          <span>Te redirigiremos al sitio de Dávila para confirmar y pagar la hora. Tu email solo se usa para recordarte la cita.</span>
+        </div>
+        <button class="btn-confirm" onclick="goTo(1)">Ir a confirmar en Dávila →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DESKTOP NAVIGATION -->
+<div class="desktop-nav">
+  <button class="nav-pill current" id="nav1" onclick="goTo(1)">1. Datos</button>
+  <button class="nav-pill" id="nav2" onclick="goTo(2)">2. Especialidad</button>
+  <button class="nav-pill" id="nav3" onclick="goTo(3)">3. Buscando</button>
+  <button class="nav-pill" id="nav4" onclick="goTo(4)">4. Resultados</button>
+  <button class="nav-pill" id="nav5" onclick="goTo(5)">5. Reserva</button>
+</div>
+
+<script>
+  let currentScreen = 1;
+  let loadingTimer = null;
+
+  function goTo(n) {
+    // Update screens
+    const prev = document.getElementById('s' + currentScreen);
+    const next = document.getElementById('s' + n);
+
+    prev.classList.remove('active');
+    next.classList.add('active', 'entering');
+    setTimeout(() => next.classList.remove('entering'), 400);
+
+    currentScreen = n;
+
+    // Update nav pills
+    for (let i = 1; i <= 5; i++) {
+      document.getElementById('nav' + i).classList.remove('current');
+    }
+    document.getElementById('nav' + n).classList.add('current');
+
+    // Trigger loading animation on screen 3
+    if (n === 3) startLoading();
+  }
+
+  function startLoading() {
+    // Reset steps
+    ['lstep2','lstep3','lstep4'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('done');
+      const check = el.querySelector('.step-check');
+      check.classList.add('pending');
+      check.textContent = '⋯';
+    });
+
+    const steps = ['lstep2', 'lstep3', 'lstep4'];
+    const delays = [800, 1800, 2800];
+
+    steps.forEach((id, i) => {
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        el.classList.add('done');
+        const check = el.querySelector('.step-check');
+        check.classList.remove('pending');
+        check.textContent = '✓';
+      }, delays[i]);
+    });
+
+    // Auto-advance to results
+    setTimeout(() => goTo(4), 4000);
+  }
+
+  // Hour slot selection
+  document.querySelectorAll('.hour-slot:not(.occupied)').forEach(slot => {
+    slot.addEventListener('click', function() {
+      document.querySelectorAll('.hour-slot').forEach(s => s.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+
+  // GPS button pulse
+  function pulseGPS(btn) {
+    btn.style.transform = 'scale(0.85)';
+    setTimeout(() => btn.style.transform = '', 200);
+    const input = document.getElementById('loc-input');
+    input.value = 'Detectando…';
+    setTimeout(() => {
+      input.value = 'Providencia, Santiago';
+    }, 1200);
+  }
+</script>
+</body>
+</html>
